@@ -1,12 +1,18 @@
-# APKEnum: Passive Enumeration Utility For Android Applications
+# APKEnum: Passive Enumeration Utility For Android Applications | Updated by Metadust
 
 [![https://www.python.org/static/community_logos/python-logo.png](https://www.python.org/static/community_logos/python-logo.png)
 
 
 ## Installation
 ### Prerequisites
+
+- NEW - SUPPORT FOR PYTHON 3
+
 - Support For Python 2.7
 - APKTool JAR
+
+
+Updates: **Advice:** This tool is a little bit outdated, it won't be as good and there's probably better alternatives (JADX + Trufflehog).
 
 
 **Note:**  The latest APKTool(v2.4.1) JAR file is already shipped with the package. In case you face decompilation issues, you can download the latest version from [here](https://bitbucket.org/iBotPeaches/apktool/downloads/) and place it in the Dependency directory with name *apktool.jar*
