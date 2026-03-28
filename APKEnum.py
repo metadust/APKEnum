@@ -1,10 +1,11 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import os
 import sys
 import ntpath
 import time
 import re
-import urlparse, urllib2
+import urllib.parse as urlparse
+import urllib.request as urllib2
 import hashlib
 from threading import Thread
 import traceback
@@ -23,8 +24,6 @@ class bcolors:
     FGWHITE = '\033[37m'
     FAIL = '\033[95m'
 
-
-
 rootDir=os.path.expanduser("~")+"/.APKEnum/" #ConfigFolder ~/.SourceCodeAnalyzer/
 projectDir=""
 apkFilePath=""
@@ -32,9 +31,7 @@ apkFileName=""
 apkHash=""
 scopeMode=False
 
-
 scopeList=[]
-
 
 authorityList=[]
 inScopeAuthorityList=[]
@@ -47,51 +44,51 @@ unrestrictedGmapKeys=[]
 gmapURLs=["https://maps.googleapis.com/maps/api/staticmap?center=45%2C10&zoom=7&size=400x400&key=", "https://maps.googleapis.com/maps/api/streetview?size=400x400&location=40.720032,-73.988354&fov=90&heading=235&pitch=10&key=", "https://www.google.com/maps/embed/v1/place?q=Seattle&key=", "https://www.google.com/maps/embed/v1/search?q=record+stores+in+Seattle&key=", "https://maps.googleapis.com/maps/api/directions/json?origin=Disneyland&destination=Universal+Studios+Hollywood4&key=", "https://maps.googleapis.com/maps/api/geocode/json?latlng=40,30&key=", "https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=40.6655101,-73.89188969999998&destinations=40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.6905615%2C-73.9976592%7C40.659569%2C-73.933783%7C40.729029%2C-73.851524%7C40.6860072%2C-73.6334271%7C40.598566%2C-73.7527626%7C40.659569%2C-73.933783%7C40.729029%2C-73.851524%7C40.6860072%2C-73.6334271%7C40.598566%2C-73.7527626&key=", "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=Museum%20of%20Contemporary%20Art%20Australia&inputtype=textquery&fields=photos,formatted_address,name,rating,opening_hours,geometry&key=", "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=Bingh&types=%28cities%29&key=", "https://maps.googleapis.com/maps/api/elevation/json?locations=39.7391536,-104.9847034&key=", "https://maps.googleapis.com/maps/api/timezone/json?location=39.6034810,-119.6822510&timestamp=1331161200&key=", "https://roads.googleapis.com/v1/nearestRoads?points=60.170880,24.942795|60.170879,24.942796|60.170877,24.942796&key="]
 
 apktoolPath="./Dependencies/apktool.jar"
-urlRegex='(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+):?\d*)([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?'#regex to extract domain
-s3Regex1="https*://(.+?)\.s3\..+?\.amazonaws\.com\/.+?"
-s3Regex2="https*://s3\..+?\.amazonaws\.com\/(.+?)\/.+?"
-s3Regex3="S3://(.+?)/"
-s3Website1="https*://(.+?)\.s3-website\..+?\.amazonaws\.com"
-s3Website2="https*://(.+?)\.s3-website-.+?\.amazonaws\.com"
-publicIp="https*://(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))(?<!127)(?<!^10)(?<!^0)\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!192\.168)(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!\.255$))"
-gMapsAPI="(AIzaSy[\w-]{33})"
+urlRegex=r'(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+):?\d*)([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?'#regex to extract domain
+s3Regex1=r"https*://(.+?)\.s3\..+?\.amazonaws\.com\/.+?"
+s3Regex2=r"https*://s3\..+?\.amazonaws\.com\/(.+?)\/.+?"
+s3Regex3=r"S3://(.+?)/"
+s3Website1=r"https*://(.+?)\.s3-website\..+?\.amazonaws\.com"
+s3Website2=r"https*://(.+?)\.s3-website-.+?\.amazonaws\.com"
+publicIp=r"https*://(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))(?<!127)(?<!^10)(?<!^0)\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!192\.168)(?<!172\.(16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(?<!\.255$))"
+gMapsAPI=r"(AIzaSy[\w-]{33})"
 
 def myPrint(text, type):
 	if(type=="INFO"):
-		print bcolors.INFO+bcolors.BOLD+text+bcolors.ENDC+"\n"
+		print(bcolors.INFO+bcolors.BOLD+text+bcolors.ENDC+"\n")
 		return
 	if(type=="INFO_WS"):
-		print bcolors.INFO+bcolors.BOLD+text+bcolors.ENDC
+		print(bcolors.INFO+bcolors.BOLD+text+bcolors.ENDC)
 		return
 	if(type=="PLAIN_OUTPUT_WS"):
-		print bcolors.INFO+text+bcolors.ENDC
+		print(bcolors.INFO+text+bcolors.ENDC)
 		return
 	if(type=="ERROR"):
-		print bcolors.BGRED+bcolors.FGWHITE+bcolors.BOLD+text+bcolors.ENDC
+		print(bcolors.BGRED+bcolors.FGWHITE+bcolors.BOLD+text+bcolors.ENDC)
 		return
 	if(type=="MESSAGE_WS"):
-		print bcolors.TITLE+bcolors.BOLD+text+bcolors.ENDC
+		print(bcolors.TITLE+bcolors.BOLD+text+bcolors.ENDC)
 		return
 	if(type=="MESSAGE"):
-		print bcolors.TITLE+bcolors.BOLD+text+bcolors.ENDC+"\n"
+		print(bcolors.TITLE+bcolors.BOLD+text+bcolors.ENDC+"\n")
 		return
 	if(type=="INSECURE"):
-		print bcolors.OKRED+bcolors.BOLD+text+bcolors.ENDC+"\n"
+		print(bcolors.OKRED+bcolors.BOLD+text+bcolors.ENDC+"\n")
 		return
 	if(type=="INSECURE_WS"):
-		print bcolors.OKRED+bcolors.BOLD+text+bcolors.ENDC
+		print(bcolors.OKRED+bcolors.BOLD+text+bcolors.ENDC)
 		return
 	if(type=="OUTPUT"):
-		print bcolors.OKBLUE+bcolors.BOLD+text+bcolors.ENDC+"\n"
+		print(bcolors.OKBLUE+bcolors.BOLD+text+bcolors.ENDC+"\n")
 		return
 	if(type=="OUTPUT_WS"):
-		print bcolors.OKBLUE+bcolors.BOLD+text+bcolors.ENDC
+		print(bcolors.OKBLUE+bcolors.BOLD+text+bcolors.ENDC)
 		return
 	if(type=="SECURE_WS"):
-		print bcolors.OKGREEN+bcolors.BOLD+text+bcolors.ENDC
+		print(bcolors.OKGREEN+bcolors.BOLD+text+bcolors.ENDC)
 		return
 	if(type=="SECURE"):
-		print bcolors.OKGREEN+bcolors.BOLD+text+bcolors.ENDC+"\n"
+		print(bcolors.OKGREEN+bcolors.BOLD+text+bcolors.ENDC+"\n")
 		return
 
 
@@ -108,7 +105,7 @@ def isValidPath(apkFilePath):
 	myPrint("I: Checking if the APK file path is valid.", "INFO_WS")
 	if (os.path.exists(apkFilePath)==False):
 		myPrint("E: Incorrect APK file path found. Please try again with correct file name.", "ERROR")
-		print
+		print()
 		exit(1)
 	else:
 		myPrint("I: APK File Found.", "INFO_WS")
@@ -133,7 +130,7 @@ def reverseEngineerApplication(apkFileName):
 	result=os.system("java -jar "+apktoolPath+" d "+"--output "+'"'+projectDir+"/apktool/"+'"'+' "'+apkFilePath+'"'+'>/dev/null')
 	if (result!=0):
 		myPrint("E: Apktool failed with exit status "+str(result)+". Please try updating the APKTool binary.", "ERROR")
-		print
+		print()
 		exit(1)
 	myPrint("I: Successfully decompiled the application. Proceeding with scanning code.", "INFO_WS")
 
@@ -143,18 +140,15 @@ def findS3Bucket(line):
 		for element in temp:
 			s3List.append(element)
 
-
 	temp=re.findall(s3Regex2,line)
 	if (len(temp)!=0):
 		for element in temp:
 			s3List.append(element)
 
-
 	temp=re.findall(s3Regex3,line)
 	if (len(temp)!=0):
 		for element in temp:
 			s3List.append(element)
-
 
 def findGoogleAPIKeys(line):
 	temp=re.findall(gMapsAPI,line)
@@ -187,7 +181,6 @@ def findS3Website(line):
 		for element in temp:
 			s3WebsiteList.append(element)
 
-
 def findUrls(line):
 	temp=re.findall(urlRegex,line)
 	if (len(temp)!=0):
@@ -204,7 +197,6 @@ def findPublicIPs(line):
 		for element in temp:
 			publicIpList.append(element[0])
 
-
 def performRecon():
 	global domainList, authorityList, inScopeDomainList, inScopeAuthorityList
 	filecontent=""
@@ -212,7 +204,7 @@ def performRecon():
 		for file_name in file_names:
 			try:
 				fullpath = os.path.join(dir_path, file_name)
-				fileobj= open(fullpath,mode='r')
+				fileobj= open(fullpath,mode='r', encoding='utf-8', errors='ignore')
 				filecontent = fileobj.read()
 				fileobj.close()
 			except Exception as e:
@@ -256,7 +248,6 @@ def displayResults():
 	gmapKeys=list(set(gmapKeys))
 	unrestrictedGmapKeys=list(set(unrestrictedGmapKeys))
 
-
 	if (len(authorityList)==0):
 		myPrint("\nNo URL found", "INSECURE")
 	else:
@@ -298,7 +289,7 @@ def displayResults():
 		# myPrint("\nList of Unrestricted Google Map API Keys found in the application", "SECURE")
 		# printList(unrestrictedGmapKeys)
 
-	print ""
+	print("")
 
 
 ####################################################################################################
@@ -306,7 +297,7 @@ def displayResults():
 
 ####################################################################################################
 
-print(bcolors.OKBLUE+""" 
+print(bcolors.OKBLUE+"""
 
 :::'###::::'########::'##:::'##:'########:'##::: ##:'##::::'##:'##::::'##:
 ::'## ##::: ##.... ##: ##::'##:: ##.....:: ###:: ##: ##:::: ##: ###::'###:
@@ -317,23 +308,23 @@ print(bcolors.OKBLUE+"""
  ##:::: ##: ##:::::::: ##::. ##: ########: ##::. ##:. #######:: ##:::: ##:
 ..:::::..::..:::::::::..::::..::........::..::::..:::.......:::..:::::..::
 	"""+bcolors.OKRED+bcolors.BOLD+"""         				
-                  # Developed By Shiv Sahni - @shiv__sahni
+                  # Developed By Shiv Sahni - @shiv__sahni | UPDATED BY @metadust
 """+bcolors.ENDC)
 
 if ((len(sys.argv)==2) and (sys.argv[1]=="-h" or sys.argv[1]=="--help")):
 	myPrint("Usage: python APKEnum.py -p/--path <apkPathName> [ -s/--scope \"comma, seperated, list\"]","ERROR")
-	myPrint("\t-p/--path: Pathname of the APK file", "ERROR") 
+	myPrint("\t-p/--path: Pathname of the APK file", "ERROR")
 	myPrint("\t-s/--scope: List of keywords to filter out domains", "ERROR")
-	print ""
-	exit(1);
+	print("")
+	exit(1)
 
 if (len(sys.argv)<3):
 	myPrint("E: Please provide the required arguments to initiate", "ERROR")
-	print ""
-	myPrint("E: Usage: python APKEnum.py -p/--path <apkPathName> [ -s/--scope \"comma, seperated, list\"]","ERROR")
-	myPrint("E: Please try again!!", "ERROR") 
-	print ""
-	exit(1);
+	print("")
+	myPrint("E: Usage: python APKEnum.py -p/--path <apkPathName>[ -s/--scope \"comma, seperated, list\"]","ERROR")
+	myPrint("E: Please try again!!", "ERROR")
+	print("")
+	exit(1)
 
 if ((len(sys.argv)>4) and (sys.argv[3]=="-s" or sys.argv[3]=="--scope")):
 	scopeString=sys.argv[4].strip()
